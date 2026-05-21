@@ -1,0 +1,17 @@
+node_modules
+dist
+coverage
+.env
+.env.*
+.git
+.github
+.vscode
+.idea
+test
+*.md
+.gitignore
+.dockerignore
+*.local
+*.log
+.DS_Store
+Thumbs.db

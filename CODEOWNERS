@@ -1,0 +1,4 @@
+# Default ownership for the MCP server repo.
+# Adjust team handles once the repo is added to a GitHub team.
+
+*       @lettrlabs/Backend
