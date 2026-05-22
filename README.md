@@ -2,7 +2,7 @@
 
 Model Context Protocol (MCP) server that exposes the LettrLabs public API as tools usable by Claude, Microsoft Copilot Studio, Google Gemini Enterprise / Agent Builder, and other MCP-compatible AI agent platforms.
 
-Internal LettrLabs repository. Proprietary; not for distribution.
+Source-available for transparency; proprietary. See [LICENSE](LICENSE) for terms.
 
 ## What it does
 
