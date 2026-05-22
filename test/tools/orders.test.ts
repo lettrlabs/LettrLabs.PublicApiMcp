@@ -99,10 +99,12 @@ describe('append_order_recipients', () => {
         orderId: 5,
         recipients: [
           {
-            address1: '123 Main St',
-            city: 'Boston',
-            state: 'MA',
-            zipCode: '02101',
+            address: {
+              address1: '123 Main St',
+              city: 'Boston',
+              state: 'MA',
+              zipCode: '02101',
+            },
           },
         ],
       },

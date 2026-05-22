@@ -6,17 +6,44 @@ import type { CuratedTool } from '../types.js';
 const PostageType = z.enum(['Standard', 'FirstClass']);
 const ProductionSpeed = z.enum(['Normal', 'ExpeditedFaster', 'ExpeditedFastest']);
 
+// LettrLabs.App's recipient model is nested. Top-level objects: address, personal, metadata.
+// See ExternalOrdersRecipientVm.cs in the App repo for the canonical shape.
 const RecipientSchema = z
   .object({
-    firstName: z.string().optional(),
-    lastName: z.string().optional(),
-    organization: z.string().optional(),
-    address1: z.string().describe('Street address line 1.'),
-    address2: z.string().optional(),
-    city: z.string(),
-    state: z.string().describe('Two-letter US state code.'),
-    zipCode: z.string().describe('5- or 9-digit US ZIP code.'),
-    customFields: z.record(z.string(), z.unknown()).optional().describe('Mail-merge custom fields.'),
+    address: z
+      .object({
+        address1: z.string().describe('Street address line 1.'),
+        address2: z.string().optional(),
+        city: z.string(),
+        state: z.string().describe('Two-letter US state code.'),
+        zipCode: z.string().describe('5- or 9-digit US ZIP code.'),
+        zip4: z.string().optional(),
+        country: z.string().optional(),
+      })
+      .passthrough(),
+    personal: z
+      .object({
+        firstName: z.string().optional(),
+        lastName: z.string().optional(),
+        toOrganization: z.string().optional(),
+        salutation: z.string().optional(),
+      })
+      .passthrough()
+      .optional(),
+    metadata: z
+      .object({
+        custom1: z.string().optional(),
+        custom2: z.string().optional(),
+        custom3: z.string().optional(),
+        custom4: z.string().optional(),
+        custom5: z.string().optional(),
+        custom6: z.string().optional(),
+        text: z.string().optional().describe('Body copy mail-merge field.'),
+        text2: z.string().optional(),
+      })
+      .passthrough()
+      .optional()
+      .describe('Mail-merge fields and return-address overrides. passthrough allows the full metadata surface.'),
   })
   .passthrough();
 
