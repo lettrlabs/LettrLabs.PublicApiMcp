@@ -78,7 +78,7 @@ jobs:
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.INFRA_REPO_DISPATCH_TOKEN }}
-          repository: lettrlabs/LettrLabs.PublicApiMcp.Infra
+          repository: lettrlabs/LettrLabs.PrivateApiMcp.Infra
           event-type: image-published
           client-payload: |-
             {

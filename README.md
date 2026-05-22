@@ -49,7 +49,7 @@ npm run lint
 
 ## Deployment
 
-Deployment lives in the sibling repo **[LettrLabs.PublicApiMcp.Infra](https://github.com/lettrlabs/LettrLabs.PublicApiMcp.Infra)** (terraform + helm + workflows). On push to `main`, this repo's `publish-image.yml` workflow builds a Docker image to ACR and fires a `repository_dispatch` event that triggers the `.Infra` deploy workflow.
+Deployment lives in the sibling repo **[LettrLabs.PrivateApiMcp.Infra](https://github.com/lettrlabs/LettrLabs.PrivateApiMcp.Infra)** (terraform + helm + workflows). On push to `main`, this repo's `publish-image.yml` workflow builds a Docker image to ACR and fires a `repository_dispatch` event that triggers the `.Infra` deploy workflow. The "Private" prefix on the sibling repo refers to that repo's visibility (it stays private), not the API itself.
 
 Hosted endpoints:
 
@@ -60,4 +60,4 @@ Hosted endpoints:
 
 - LettrLabs public API: `LettrLabs.App` repo, `backend/Controllers/ExternalApi/V1/*`
 - OpenAPI spec: `LettrLabs.App/shared/openapi.json` (mixes internal + external; we only wrap the `[ApiKeySecurity]`-protected subset)
-- Infra / deploy: `LettrLabs.PublicApiMcp.Infra`
+- Infra / deploy: `LettrLabs.PrivateApiMcp.Infra`
