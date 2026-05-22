@@ -49,7 +49,15 @@ npm run lint
 
 ## Deployment
 
-Deployment lives in the sibling repo **[LettrLabs.PrivateApiMcp.Infra](https://github.com/lettrlabs/LettrLabs.PrivateApiMcp.Infra)** (terraform + helm + workflows). On push to `main`, this repo's `publish-image.yml` workflow builds a Docker image to ACR and fires a `repository_dispatch` event that triggers the `.Infra` deploy workflow. The "Private" prefix on the sibling repo refers to that repo's visibility (it stays private), not the API itself.
+This repo holds source only — it never builds or pushes Docker images and has no Azure secrets. All deployment lives in the sibling repo **[LettrLabs.PrivateApiMcp.Infra](https://github.com/lettrlabs/LettrLabs.PrivateApiMcp.Infra)**, which checks this repo out at a given SHA, runs `az acr build`, and helm-deploys. That keeps this repo secret-free so it can flip public when we release without exposing any auth surface. The "Private" prefix on the sibling repo refers to that repo's visibility (it stays private forever), not the API itself.
+
+To deploy a commit:
+
+```bash
+gh workflow run "Deploy to nonprod" \
+  -R lettrlabs/LettrLabs.PrivateApiMcp.Infra \
+  -f code_ref=$(git rev-parse HEAD)
+```
 
 Hosted endpoints:
 
