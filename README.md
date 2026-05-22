@@ -61,7 +61,7 @@ gh workflow run "Deploy to nonprod" \
 
 Hosted endpoints:
 
-- nonprod: `https://mcp-nonprod.lettrlabs.com/mcp`
+- nonprod: `https://mcp.nonprod.lettrlabs.com/mcp`
 - prod:    `https://mcp.lettrlabs.com/mcp` (post-launch)
 
 ## Related
