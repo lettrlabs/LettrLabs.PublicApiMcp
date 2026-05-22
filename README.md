@@ -21,7 +21,7 @@ The MCP server itself is stateless. It forwards `X-API-KEY` from inbound request
 ## Local development
 
 ```bash
-nvm use 20
+nvm use 24
 npm install
 cp .env.example .env
 # Edit .env with a real LETTRLABS_API_BASE_URL (e.g. https://app-dev.lettrlabs.com)

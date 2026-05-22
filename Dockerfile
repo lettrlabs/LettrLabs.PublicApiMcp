@@ -1,9 +1,17 @@
 ################################################################################
 # Stage 1 — build
 ################################################################################
-FROM node:20-alpine AS builder
+# Microsoft devcontainers image instead of node:24-alpine because (a) Node 20
+# is EOL as of 2026-04-30, and (b) Docker Hub anonymous-pull rate limits hit
+# ACR builds. MCR has no equivalent rate limit and mirrors the rest of the
+# LettrLabs services' base-image pattern (.NET ones use mcr.microsoft.com).
+FROM mcr.microsoft.com/devcontainers/javascript-node:24 AS builder
 
 WORKDIR /app
+
+# devcontainers image runs as the 'node' user (uid 1000) by default; switch
+# to root for npm install so it can write to global caches if needed.
+USER root
 
 # Install deps with a clean cache for reproducible builds.
 COPY package.json package-lock.json* ./
@@ -20,7 +28,7 @@ RUN npm prune --omit=dev
 ################################################################################
 # Stage 2 — runtime
 ################################################################################
-FROM gcr.io/distroless/nodejs20-debian12:nonroot AS runtime
+FROM gcr.io/distroless/nodejs24-debian12:nonroot AS runtime
 
 WORKDIR /app
 
