@@ -112,8 +112,8 @@ describe('append_order_recipients', () => {
     const [url, init] = firstCall(fetch);
     expect(String(url)).toContain('/v1/order/5/recipients:append');
     expect(init.method).toBe('PUT');
-    const body = JSON.parse(init.body as string) as { Recipients: unknown[] };
-    expect(body.Recipients).toHaveLength(1);
+    const body = JSON.parse(init.body as string) as { recipients: unknown[] };
+    expect(body.recipients).toHaveLength(1);
   });
 });
 
@@ -156,8 +156,8 @@ describe('submit_and_charge_order', () => {
     expect(String(url)).toContain('/v1/order/5/checkout');
     expect(init.method).toBe('POST');
     const body = JSON.parse(init.body as string) as Record<string, unknown>;
-    expect(body['PostageType']).toBe('FirstClass');
-    expect(body['ProductionSpeed']).toBe('Normal');
-    expect(body['AutoBill']).toBe(true);
+    expect(body['postageType']).toBe('FirstClass');
+    expect(body['productionSpeed']).toBe('Normal');
+    expect(body['autoBill']).toBe(true);
   });
 });

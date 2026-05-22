@@ -181,7 +181,8 @@ export const appendOrderRecipients: CuratedTool<z.infer<typeof AppendOrderRecipi
       'append_order_recipients',
       auth.apiKey,
       { orderId, recipients },
-      () => client.put(`/v1/order/${orderId}/recipients:append`, { Recipients: recipients }),
+      // LettrLabs.App uses camelCase deserialization (default ASP.NET Core).
+      () => client.put(`/v1/order/${orderId}/recipients:append`, { recipients }),
     ),
 };
 
@@ -216,11 +217,12 @@ export const submitAndChargeOrder: CuratedTool<z.infer<typeof SubmitAndChargeOrd
     assertConfirmed(input, 'submit_and_charge_order');
     const { orderId, ...body } = input;
     return dedupedCall('submit_and_charge_order', auth.apiKey, input, () =>
+      // LettrLabs.App uses camelCase deserialization (default ASP.NET Core).
       client.post(`/v1/order/${orderId}/checkout`, {
-        PostageType: body.postage,
-        ProductionSpeed: body.production,
-        HoldUntilDate: body.holdUntilDate,
-        AutoBill: body.autoBill ?? true,
+        postageType: body.postage,
+        productionSpeed: body.production,
+        holdUntilDate: body.holdUntilDate,
+        autoBill: body.autoBill ?? true,
       }),
     );
   },
