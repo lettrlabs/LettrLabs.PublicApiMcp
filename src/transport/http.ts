@@ -72,8 +72,30 @@ async function handleMcpRequest(
   res: Response,
   opts: HttpServerOptions,
 ): Promise<void> {
+  // Auth has its own try block: failures here are 401 + WWW-Authenticate so
+  // OAuth-capable clients (Claude.ai, ChatGPT) can discover the auth server.
+  let auth;
   try {
-    const auth = await opts.authProvider.extract(req);
+    auth = await opts.authProvider.extract(req);
+  } catch (err) {
+    const mcpErr = toMcpError(err);
+    logger.info({ err: mcpErr.message }, 'MCP auth failed; advertising OAuth metadata');
+    if (res.headersSent) return;
+    const proto =
+      (req.headers['x-forwarded-proto'] as string | undefined)?.split(',')[0]?.trim() ??
+      req.protocol;
+    const host = (req.headers['x-forwarded-host'] as string | undefined) ?? req.headers.host;
+    const base = (process.env.PUBLIC_BASE_URL ?? `${proto}://${host}`).replace(/\/+$/, '');
+    res.setHeader(
+      'WWW-Authenticate',
+      `Bearer realm="LettrLabs MCP", resource_metadata="${base}/.well-known/oauth-protected-resource"`,
+    );
+    res.status(401).json({ error: mcpErr.message, code: mcpErr.code });
+    return;
+  }
+
+  // Past auth: subsequent errors are protocol / internal failures.
+  try {
     const server = buildServer(auth, opts.env);
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
@@ -89,23 +111,7 @@ async function handleMcpRequest(
   } catch (err) {
     const mcpErr = toMcpError(err);
     logger.warn({ err: mcpErr.message, code: mcpErr.code }, 'MCP request failed');
-    if (res.headersSent) return;
-
-    const isAuthError = mcpErr.code !== -32600 && mcpErr.code !== -32602;
-    if (isAuthError) {
-      // Point clients (Claude.ai, ChatGPT, etc.) at the OAuth metadata
-      // endpoint so they can discover how to authenticate.
-      const proto =
-        (req.headers['x-forwarded-proto'] as string | undefined)?.split(',')[0]?.trim() ??
-        req.protocol;
-      const host = (req.headers['x-forwarded-host'] as string | undefined) ?? req.headers.host;
-      const base = process.env.PUBLIC_BASE_URL ?? `${proto}://${host}`;
-      res.setHeader(
-        'WWW-Authenticate',
-        `Bearer realm="LettrLabs MCP", resource_metadata="${base.replace(/\/+$/, '')}/.well-known/oauth-protected-resource"`,
-      );
-      res.status(401).json({ error: mcpErr.message, code: mcpErr.code });
-    } else {
+    if (!res.headersSent) {
       res.status(400).json({ error: mcpErr.message, code: mcpErr.code });
     }
   }
