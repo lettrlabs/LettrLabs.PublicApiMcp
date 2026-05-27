@@ -1,34 +1,53 @@
-# LettrLabs.PublicApiMcp
+# LettrLabs MCP Server
 
-Model Context Protocol (MCP) server that exposes the LettrLabs public API as tools usable by Claude, Microsoft Copilot Studio, Google Gemini Enterprise / Agent Builder, and other MCP-compatible AI agent platforms.
+Send direct mail from Claude, ChatGPT, Cursor, and other MCP-compatible AI agents. Drafting campaigns, previewing pricing, and submitting mailings happens inside the same chat where you're already working — no copy-paste into separate dashboards.
 
-Source-available for transparency; proprietary. See [LICENSE](LICENSE) for terms.
+> **Private beta.** The hosted MCP endpoint is currently rolled out at `https://mcp.nonprod.lettrlabs.com/mcp`. Reach out to your LettrLabs account manager for an API key. The production endpoint at `https://mcp.lettrlabs.com/mcp` lands at GA.
 
-## What it does
+---
 
-Wraps the customer-facing LettrLabs external API (the `[ApiKeySecurity]`-protected endpoints under `/v1/*` in `LettrLabs.App`) as a set of MCP tools. Customers point their agent platform at the hosted MCP endpoint, configure their LettrLabs API key, and the agent can list orders, draft campaigns, preview pricing, submit (with confirmation), and more.
+## Connect to your AI agent
 
-The MCP server itself is stateless. It forwards `X-API-KEY` from inbound requests to the LettrLabs API; it never persists customer keys.
+You'll need a LettrLabs API key (see [Get an API key](#get-an-api-key) below). Then pick your agent:
 
-## Architecture
+### Claude.ai (Pro / Team / Enterprise)
 
-- **Transport**: Streamable HTTP (the official MCP transport for hosted servers). No stdio.
-- **Tools**: ~12 curated semantic tools for the common flows (`list_orders`, `get_order_analytics`, `create_order_from_template`, `submit_and_charge_order`, etc.) plus a `call_lettrlabs_api` escape hatch for the remaining external endpoints.
-- **Auth**: API key per request, forwarded as `X-API-KEY` to the LettrLabs API. Auth is implemented as middleware so OAuth can slot in later without rewriting tool handlers.
-- **Dedupe**: an in-memory LRU dedupes write-tool calls within a short time window. This is a v1 stopgap pending an `Idempotency-Key` change in `LettrLabs.App`.
-- **Confirmation gate**: tools that move money (`submit_and_charge_order`) require either an MCP elicitation handshake or an explicit `confirm: true` parameter from the calling agent.
+1. **Settings → Connectors → Add custom connector**
+2. **URL**: `https://mcp.nonprod.lettrlabs.com/mcp`
+3. Click **Connect**. Claude will open an authorization page in a new tab.
+4. **Paste your LettrLabs API key** into the consent form and click **Authorize**.
 
-## Local development
+Claude stores the token from then on. Start a new chat, enable the LettrLabs connector via the toggle in the composer, and ask it to "list my recent orders".
 
-```bash
-nvm use 24
-npm install
-cp .env.example .env
-# Edit .env with a real LETTRLABS_API_BASE_URL (e.g. https://app-dev.lettrlabs.com)
-npm run dev
+### ChatGPT (Plus / Pro / Team / Enterprise)
+
+1. **Settings → Connectors → Add MCP Connector**
+2. **URL**: `https://mcp.nonprod.lettrlabs.com/mcp`
+3. **Authentication**: API Key. Header name `X-API-KEY`, value = your LettrLabs API key.
+4. Save and enable for your conversation.
+
+### Cursor, Windsurf, Continue, Zed, Cline
+
+Add to your IDE's MCP config (path varies — Cursor uses `~/.cursor/mcp.json`, Windsurf `~/.codeium/windsurf/mcp_config.json`, Continue `~/.continue/config.json` `mcpServers` block, etc.):
+
+```json
+{
+  "mcpServers": {
+    "lettrlabs": {
+      "url": "https://mcp.nonprod.lettrlabs.com/mcp",
+      "headers": {
+        "X-API-KEY": "LL-API-your-key-here"
+      }
+    }
+  }
+}
 ```
 
-The server starts on `PORT` (default `3333`). Point an MCP client at `http://localhost:3333/mcp` with `X-API-KEY` set to a dev LettrLabs API key.
+### Claude Code (CLI)
+
+```bash
+claude mcp add-json lettrlabs '{"url":"https://mcp.nonprod.lettrlabs.com/mcp","headers":{"X-API-KEY":"LL-API-your-key-here"}}'
+```
 
 ### MCP Inspector (quick smoke test)
 
@@ -36,22 +55,70 @@ The server starts on `PORT` (default `3333`). Point an MCP client at `http://loc
 npx @modelcontextprotocol/inspector
 ```
 
-Configure: transport = streamable-http, URL = `http://localhost:3333/mcp`, header `X-API-KEY: <your dev key>`.
+Configure: transport = streamable-http, URL = `https://mcp.nonprod.lettrlabs.com/mcp`, custom header `X-API-KEY: <your key>`. Lets you click through `tools/list` and `tools/call` to confirm the connection works.
 
-## Tests
+---
+
+## What you can do
+
+Once connected, your agent can call these tools on your behalf:
+
+**Read your account**
+- `list_orders` — your direct mail orders with filters by status, date, product
+- `get_order_recipients` — who's on a given order
+- `get_order_proof` — the printed-piece PDF for an order
+- `get_order_analytics` — aggregate spend and send counts across all campaigns
+- `get_order_transactions` — itemized charges and refunds
+- `list_automations` — recurring/triggered campaigns (Shopify, Klaviyo, etc.)
+- `list_conversions` — attributed responses to past sends
+- `get_my_profile` — account info and balance
+
+**Draft and send campaigns**
+- `preview_order_pricing` — costs out an order *without* charging
+- `create_order_from_template` — start a new draft from one of your templates
+- `append_order_recipients` — add a mailing list to a draft
+- `submit_and_charge_order` — submits for production. **Requires explicit `confirm: true`** — agents must surface the spend to you before this fires.
+
+**Escape hatch**
+- `call_lettrlabs_api` — call any LettrLabs external API endpoint not yet covered above
+
+Each tool's full input/output is exposed via `tools/list` and visible in your agent's tool picker.
+
+---
+
+## Get an API key
+
+Sign in to your LettrLabs account at https://app.lettrlabs.com and generate an API key from your account settings. Treat it like any other credential — the bearer token your AI agent stores is derived from this key.
+
+If you're not a LettrLabs customer yet, reach out at https://lettrlabs.com to get set up.
+
+---
+
+## Safety model
+
+- **You authorize each connection once.** No long-lived auth handshake without your consent — the agent walks through OAuth and lands on a LettrLabs-hosted consent page where you paste your API key.
+- **The MCP server is stateless.** Your key isn't stored server-side. The token your agent holds is the bearer credential it presents on every call.
+- **Charge tools require explicit confirmation.** `submit_and_charge_order` won't fire unless the agent passes `confirm: true`. Well-behaved agents will show you the price first and ask before sending.
+- **The MCP server is open source.** Inspect what your agent is actually calling on your behalf — every tool's behavior is in `src/tools/`.
+
+---
+
+## For LettrLabs developers
+
+Local dev + testing:
 
 ```bash
-npm test            # one-shot
-npm run test:watch  # watch mode
-npm run typecheck   # tsc --noEmit
+nvm use 24
+npm install
+cp .env.example .env
+# Set LETTRLABS_API_BASE_URL to a dev environment (e.g. https://app-dev.lettrlabs.com/api)
+npm run dev          # starts on http://localhost:3333
+npm test             # vitest one-shot
+npm run typecheck    # tsc --noEmit
 npm run lint
 ```
 
-## Deployment
-
-This repo holds source only — it never builds or pushes Docker images and has no Azure secrets. All deployment lives in the sibling repo **[LettrLabs.PrivateApiMcp.Infra](https://github.com/lettrlabs/LettrLabs.PrivateApiMcp.Infra)**, which checks this repo out at a given SHA, runs `az acr build`, and helm-deploys. That keeps this repo secret-free so it can flip public when we release without exposing any auth surface. The "Private" prefix on the sibling repo refers to that repo's visibility (it stays private forever), not the API itself.
-
-To deploy a commit:
+Deployment lives in the private sibling repo **[LettrLabs.PrivateApiMcp.Infra](https://github.com/lettrlabs/LettrLabs.PrivateApiMcp.Infra)** (terraform + helm + GitHub Actions). On push to `main`, deploy by:
 
 ```bash
 gh workflow run "Deploy to nonprod" \
@@ -59,13 +126,8 @@ gh workflow run "Deploy to nonprod" \
   -f code_ref=$(git rev-parse HEAD)
 ```
 
-Hosted endpoints:
+---
 
-- nonprod: `https://mcp.nonprod.lettrlabs.com/mcp`
-- prod:    `https://mcp.lettrlabs.com/mcp` (post-launch)
+## License
 
-## Related
-
-- LettrLabs public API: `LettrLabs.App` repo, `backend/Controllers/ExternalApi/V1/*`
-- OpenAPI spec: `LettrLabs.App/shared/openapi.json` (mixes internal + external; we only wrap the `[ApiKeySecurity]`-protected subset)
-- Infra / deploy: `LettrLabs.PrivateApiMcp.Infra`
+Source-available for transparency; proprietary. See [LICENSE](LICENSE) for terms.
