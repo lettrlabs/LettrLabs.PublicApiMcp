@@ -29,17 +29,21 @@ export class ApiKeyAuthProvider implements AuthProvider {
   }
 }
 
-function readDirect(req: Request): string | null {
-  const raw = req.headers[X_API_KEY];
-  const v = Array.isArray(raw) ? raw[0] : raw;
+/** First value of a request header, normalized to a trimmed non-empty string or null. */
+function firstHeader(req: Request, name: string): string | null {
+  const raw: string | string[] | undefined = req.headers[name];
+  const v = typeof raw === 'string' ? raw : Array.isArray(raw) ? raw[0] : undefined;
   return v && v.trim().length > 0 ? v.trim() : null;
 }
 
+function readDirect(req: Request): string | null {
+  return firstHeader(req, X_API_KEY);
+}
+
 function readBearer(req: Request): string | null {
-  const raw = req.headers['authorization'];
-  if (!raw) return null;
-  const v = Array.isArray(raw) ? raw[0] : raw;
-  if (!v) return null;
-  const m = /^Bearer\s+(.+)$/i.exec(v.trim());
-  return m ? m[1]!.trim() : null;
+  const header = firstHeader(req, 'authorization');
+  if (!header) return null;
+  const m = /^Bearer\s+(.+)$/i.exec(header);
+  const token = m?.[1]?.trim();
+  return token && token.length > 0 ? token : null;
 }
