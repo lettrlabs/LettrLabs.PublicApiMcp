@@ -2,7 +2,7 @@
 
 Send direct mail from Claude, ChatGPT, Cursor, and other MCP-compatible AI agents. Drafting campaigns, previewing pricing, and submitting mailings happens inside the same chat where you're already working — no copy-paste into separate dashboards.
 
-> **Private beta.** The hosted MCP endpoint is currently rolled out at `https://mcp.nonprod.lettrlabs.com/mcp`. Reach out to your LettrLabs account manager for an API key. The production endpoint at `https://mcp.lettrlabs.com/mcp` lands at GA.
+> **Available now** to all LettrLabs customers at `https://mcp.lettrlabs.com/mcp`. Generate an API key from your account ([Get an API key](#get-an-api-key)) and connect your agent below.
 
 ---
 
@@ -13,7 +13,7 @@ You'll need a LettrLabs API key (see [Get an API key](#get-an-api-key) below). T
 ### Claude.ai (Pro / Team / Enterprise)
 
 1. **Settings → Connectors → Add custom connector**
-2. **URL**: `https://mcp.nonprod.lettrlabs.com/mcp`
+2. **URL**: `https://mcp.lettrlabs.com/mcp`
 3. Click **Connect**. Claude will open an authorization page in a new tab.
 4. **Paste your LettrLabs API key** into the consent form and click **Authorize**.
 
@@ -22,7 +22,7 @@ Claude stores the token from then on. Start a new chat, enable the LettrLabs con
 ### ChatGPT (Plus / Pro / Team / Enterprise)
 
 1. **Settings → Connectors → Add MCP Connector**
-2. **URL**: `https://mcp.nonprod.lettrlabs.com/mcp`
+2. **URL**: `https://mcp.lettrlabs.com/mcp`
 3. **Authentication**: API Key. Header name `X-API-KEY`, value = your LettrLabs API key.
 4. Save and enable for your conversation.
 
@@ -34,7 +34,7 @@ Add to your IDE's MCP config (path varies — Cursor uses `~/.cursor/mcp.json`, 
 {
   "mcpServers": {
     "lettrlabs": {
-      "url": "https://mcp.nonprod.lettrlabs.com/mcp",
+      "url": "https://mcp.lettrlabs.com/mcp",
       "headers": {
         "X-API-KEY": "LL-API-your-key-here"
       }
@@ -46,7 +46,7 @@ Add to your IDE's MCP config (path varies — Cursor uses `~/.cursor/mcp.json`, 
 ### Claude Code (CLI)
 
 ```bash
-claude mcp add-json lettrlabs '{"url":"https://mcp.nonprod.lettrlabs.com/mcp","headers":{"X-API-KEY":"LL-API-your-key-here"}}'
+claude mcp add-json lettrlabs '{"url":"https://mcp.lettrlabs.com/mcp","headers":{"X-API-KEY":"LL-API-your-key-here"}}'
 ```
 
 ### MCP Inspector (quick smoke test)
@@ -55,7 +55,7 @@ claude mcp add-json lettrlabs '{"url":"https://mcp.nonprod.lettrlabs.com/mcp","h
 npx @modelcontextprotocol/inspector
 ```
 
-Configure: transport = streamable-http, URL = `https://mcp.nonprod.lettrlabs.com/mcp`, custom header `X-API-KEY: <your key>`. Lets you click through `tools/list` and `tools/call` to confirm the connection works.
+Configure: transport = streamable-http, URL = `https://mcp.lettrlabs.com/mcp`, custom header `X-API-KEY: <your key>`. Lets you click through `tools/list` and `tools/call` to confirm the connection works.
 
 ---
 
@@ -88,7 +88,11 @@ Each tool's full input/output is exposed via `tools/list` and visible in your ag
 
 ## Get an API key
 
-Sign in to your LettrLabs account at https://app.lettrlabs.com and generate an API key from your account settings. Treat it like any other credential — the bearer token your AI agent stores is derived from this key.
+Sign in at https://app.lettrlabs.com, then:
+
+**Automations → Manage Integrations → OpenAPI → Generate Key**
+
+Copy the generated key (it starts with `LL-API-`). Treat it like any other credential — the bearer token your AI agent stores is derived from this key, so anyone holding it can act on your LettrLabs account. Rotate or revoke it from the same screen if it's ever exposed.
 
 If you're not a LettrLabs customer yet, reach out at https://lettrlabs.com to get set up.
 
