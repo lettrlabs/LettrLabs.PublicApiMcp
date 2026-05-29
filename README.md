@@ -88,6 +88,8 @@ Each tool's full input/output is exposed via `tools/list` and visible in your ag
 
 ## Get an API key
 
+**Prerequisite — your plan must include OpenAPI / API access.** This MCP calls the LettrLabs external API, which is gated to plans with OpenAPI integrations enabled. If you don't see the option below, or your agent reports *"your subscription tier doesn't include OpenAPI integrations,"* contact your LettrLabs rep to enable it on your account.
+
 Sign in at https://app.lettrlabs.com, then:
 
 **Automations → Manage Integrations → OpenAPI → Generate Key**
