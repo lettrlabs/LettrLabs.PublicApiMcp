@@ -39,6 +39,9 @@ export function renderConsentPage(input: ConsentPageInput): string {
             border: 1px solid #30363d; border-radius: 12px;
             padding: 2rem; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
     h1 { margin: 0 0 0.5rem; font-size: 1.4rem; }
+    .beta { display: inline-block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em;
+            text-transform: uppercase; color: #d29922; border: 1px solid #d29922;
+            border-radius: 4px; padding: 0.1rem 0.4rem; margin-bottom: 0.75rem; }
     .sub { color: #8b949e; font-size: 0.95rem; margin-bottom: 1.5rem; }
     label { display: block; font-size: 0.9rem; color: #c9d1d9; margin-bottom: 0.4rem; }
     input[type="password"] { width: 100%; box-sizing: border-box;
@@ -60,8 +63,9 @@ export function renderConsentPage(input: ConsentPageInput): string {
 </head>
 <body>
   <form class="card" method="POST" action="/oauth/authorize">
+    <span class="beta">Beta</span>
     <h1>Authorize ${safeName}</h1>
-    <p class="sub">${safeName} is requesting permission to access your LettrLabs account through the MCP server.</p>
+    <p class="sub">${safeName} is requesting permission to access your LettrLabs account through the MCP server. This integration is in beta — it's actively improving and may change.</p>
     ${errorBlock}
     <label for="apiKey">LettrLabs API key</label>
     <input type="password" name="apiKey" id="apiKey" placeholder="LL-API-…" autocomplete="off" required autofocus>

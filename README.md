@@ -2,7 +2,7 @@
 
 Send direct mail from Claude, ChatGPT, Cursor, and other MCP-compatible AI agents. Drafting campaigns, previewing pricing, and submitting mailings happens inside the same chat where you're already working — no copy-paste into separate dashboards.
 
-> **Available now** to all LettrLabs customers at `https://mcp.lettrlabs.com/mcp`. Generate an API key from your account ([Get an API key](#get-an-api-key)) and connect your agent below.
+> **🧪 Public beta.** Live at `https://mcp.lettrlabs.com/mcp` for all LettrLabs customers. We're actively improving it — tool behavior and connection flows may change, and you're helping us harden it across the many agent platforms and setups in the wild. Please report anything that breaks or feels off to your LettrLabs contact. Generate an API key ([Get an API key](#get-an-api-key)) and connect your agent below.
 
 ---
 
