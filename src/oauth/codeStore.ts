@@ -2,8 +2,10 @@
  * In-memory store for one-time OAuth authorization codes.
  *
  * Codes are short-lived (5 min) and consumed exactly once on /token exchange.
- * Single-pod only — if we ever scale to multiple replicas, this needs Redis or
- * similar shared state. For nonprod demo (1-2 pods), in-memory is fine.
+ * Single-pod only: /authorize and /token must hit the same pod, so prod runs
+ * exactly 1 replica by design (see helm values-prod.yaml). Scaling to >1
+ * replica requires moving this store to shared state (Redis) first — otherwise
+ * code exchange fails across pods.
  */
 
 import { randomBytes } from 'node:crypto';
