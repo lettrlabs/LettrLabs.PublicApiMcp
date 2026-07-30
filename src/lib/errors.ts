@@ -64,16 +64,31 @@ function collectItemReasonCodes(body: Record<string, unknown>): string[] {
   return [...codes];
 }
 
+function reasonCodeOf(body: unknown): string | undefined {
+  if (body !== null && typeof body === 'object') {
+    const rc = (body as Record<string, unknown>)['reasonCode'];
+    if (typeof rc === 'string') return rc;
+  }
+  return undefined;
+}
+
 function describeApiError(err: LettrLabsApiError): string {
+  // Defense-in-depth: never fold a 5xx body's free-text (message/errors[]) into
+  // the agent-facing message — a server fault body can carry stack frames,
+  // hostnames, or SQL. Keep only a declared machine `reasonCode`. This preserves
+  // this module's original "avoids leaking stack traces or internal hostnames"
+  // contract while still surfacing the declared refusal codes on 4xx.
+  if (err.status >= 500) {
+    const rc = reasonCodeOf(err.body);
+    return rc ? `LettrLabs API server error (${rc})` : 'LettrLabs API server error';
+  }
   const base = formatApiErrorMessage(err.body, err.message);
   const prefix =
     err.status === 401
       ? 'Authentication failed (missing or invalid API key)'
       : err.status === 403
         ? 'Entitlement/permission denied (your plan may not include this feature)'
-        : err.status >= 500
-          ? 'LettrLabs API server error'
-          : undefined;
+        : undefined;
   return prefix ? `${prefix}: ${base}` : base;
 }
 
@@ -101,7 +116,9 @@ export function toMcpError(err: unknown): McpError {
     return new McpError(code, describeApiError(err), {
       status: err.status,
       requestId: err.requestId,
-      body: err.body,
+      // Omit the raw body on 5xx — a server fault body may carry internal detail.
+      // 4xx bodies (refusal reasonCode, validation) are the App's public contract.
+      body: err.status >= 500 ? undefined : err.body,
     });
   }
   if (err instanceof Error) {

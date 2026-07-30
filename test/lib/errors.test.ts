@@ -28,6 +28,26 @@ describe('toMcpError — reasonCode + error body surfacing (R1/R2/R7)', () => {
     expect(mcp.code).toBe(ErrorCode.InternalError);
     expect(mcp.message).toMatch(/server error/i);
     expect(mcp.message).not.toMatch(/reasonCode/);
+    // The 5xx body's free text is not folded into the message.
+    expect(mcp.message).not.toContain('unexpected error');
+  });
+
+  it('U-3b: a 5xx body\'s internal detail is never surfaced (message or data)', () => {
+    const leaky = {
+      message: 'System.NullReferenceException at Foo.Bar() in C:\\app\\Foo.cs:line 42',
+      errors: ['sql: SELECT * FROM Secrets'],
+    };
+    const mcp = toMcpError(err(503, leaky));
+    expect(mcp.message).toContain('LettrLabs API server error');
+    expect(mcp.message).not.toMatch(/Exception|SELECT|\.cs/);
+    // The raw body is not attached to the MCP error data on 5xx.
+    expect((mcp.data as { body?: unknown }).body).toBeUndefined();
+  });
+
+  it('U-3c: a 5xx keeps a declared machine reasonCode but drops its free text', () => {
+    const mcp = toMcpError(err(500, { reasonCode: 'UNEXPECTED_ERROR', message: 'raw internal detail' }));
+    expect(mcp.message).toContain('UNEXPECTED_ERROR');
+    expect(mcp.message).not.toContain('raw internal detail');
   });
 
   it('U-4: a 401 surfaces as an authentication failure', () => {

@@ -91,7 +91,7 @@ describe('create_order_from_template', () => {
 });
 
 describe('append_order_recipients', () => {
-  it('PUTs /v1/order/:id/recipients:append with capitalized Recipients body', async () => {
+  it('PUTs the canonical /v1/order/:id/recipients route with a recipients body', async () => {
     const fetch = fakeFetch({ body: { Status: 'success' } });
     const ctx = buildCtx(fetch);
 
@@ -113,7 +113,9 @@ describe('append_order_recipients', () => {
     );
 
     const [url, init] = firstCall(fetch);
-    expect(String(url)).toContain('/v1/order/5/recipients:append');
+    // Targets the canonical PUT .../recipients route, not the `:append` compat alias.
+    expect(String(url)).toContain('/v1/order/5/recipients');
+    expect(String(url)).not.toContain(':append');
     expect(init.method).toBe('PUT');
     const body = JSON.parse(init.body as string) as { recipients: unknown[] };
     expect(body.recipients).toHaveLength(1);

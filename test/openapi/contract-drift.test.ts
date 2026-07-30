@@ -90,27 +90,47 @@ describe('contract drift — endpoint allow-list currency (R8/R9)', () => {
   });
 });
 
+// Normalize an operation key for cross-source comparison: strip a leading /api and
+// collapse every {param} (including an optional {x?}) to a single {} token, so the
+// snapshot's templates line up with the App's ASP.NET-style path parameters.
+const normKey = (method: string, path: string): string =>
+  `${method.toUpperCase()} ${path.replace(/^\/api/, '').replace(/\{[^}]+\}/g, '{}')}`;
+
+// The snapshot's optional-tail template (e.g. .../proof/{recipient?}) stands for
+// two live routes — with and without the tail — so expand it before an exact
+// bidirectional compare.
+function expandSnapshotKeys(ops: Operation[]): Set<string> {
+  const keys = new Set<string>();
+  for (const o of ops) {
+    keys.add(normKey(o.method, o.path));
+    const optional = o.path.match(/^(.*)\/\{[^}]+\?\}$/);
+    if (optional && optional[1]) keys.add(normKey(o.method, optional[1]));
+  }
+  return keys;
+}
+
 // Env-gated live drift check: fetches the App's served external OpenAPI so a
 // future upstream contract change fails here, without requiring network in the
 // default offline suite. Set LIVE_CONTRACT_URL to a served /api/openapi/v3.json.
 describe.skipIf(!process.env['LIVE_CONTRACT_URL'])('contract drift — live (R9)', () => {
-  it('the live published contract still carries our stable parameter-free operations', async () => {
-    const res = await fetch(process.env['LIVE_CONTRACT_URL'] as string);
+  it('the snapshot operation set reconciles exactly with the live published contract', async () => {
+    // Bound the request so a hung upstream fails cleanly instead of stalling the test.
+    const res = await fetch(process.env['LIVE_CONTRACT_URL'] as string, {
+      signal: AbortSignal.timeout(10_000),
+    });
     expect(res.ok).toBe(true);
     const doc = (await res.json()) as { paths?: Record<string, Record<string, unknown>> };
-    const livePaths = new Set<string>();
+    const live = new Set<string>();
     for (const [path, ops] of Object.entries(doc.paths ?? {})) {
-      for (const method of Object.keys(ops)) {
-        livePaths.add(`${method.toUpperCase()} ${path.replace(/^\/api/, '')}`);
-      }
+      for (const method of Object.keys(ops)) live.add(normKey(method, path));
     }
-    // Assert exact presence of the snapshot's parameter-free operations — these
-    // carry no path template to normalize, so a gross surface drift (paths moved
-    // or an endpoint retired) fails here. Parameterized-path reconciliation
-    // stays with the deterministic snapshot check above.
-    const paramFree = snapshot.operations.map(opKey).filter((k) => !k.includes('{'));
-    for (const k of paramFree) {
-      expect(livePaths).toContain(k);
-    }
+    // Compare the external /v1/* surface both directions: `missing` = an operation
+    // the snapshot claims that the live doc no longer has; `extra` = a live /v1/*
+    // operation the snapshot (and the allow-list) lacks. Either is real drift.
+    const liveV1 = new Set([...live].filter((k) => k.includes(' /v1/')));
+    const snap = expandSnapshotKeys(snapshot.operations);
+    const missing = [...snap].filter((k) => !liveV1.has(k)).sort();
+    const extra = [...liveV1].filter((k) => !snap.has(k)).sort();
+    expect({ missing, extra }).toEqual({ missing: [], extra: [] });
   });
 });

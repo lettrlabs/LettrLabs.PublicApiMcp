@@ -211,8 +211,10 @@ export const appendOrderRecipients: CuratedTool<z.infer<typeof AppendOrderRecipi
       'append_order_recipients',
       auth.apiKey,
       { orderId, recipients },
+      // Target the canonical PUT .../recipients route (not the `:append` compat
+      // alias) so the tool does not depend on an alias the App frames as legacy.
       // LettrLabs.App uses camelCase deserialization (default ASP.NET Core).
-      () => client.put(`/v1/order/${orderId}/recipients:append`, { recipients }),
+      () => client.put(`/v1/order/${orderId}/recipients`, { recipients }),
     ),
 };
 
