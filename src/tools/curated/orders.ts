@@ -1,10 +1,8 @@
 import { z } from 'zod';
 import { assertConfirmed, confirmSchema } from '../../lib/confirm.js';
 import { dedupedCall } from '../../lib/dedupe.js';
+import { ORDER_STATUSES, PostageType, ProductionSpeed } from '../../openapi/vocabulary.js';
 import type { CuratedTool } from '../types.js';
-
-const PostageType = z.enum(['Standard', 'FirstClass']);
-const ProductionSpeed = z.enum(['Normal', 'ExpeditedFaster', 'ExpeditedFastest']);
 
 // LettrLabs.App's recipient model is nested. Top-level objects: address, personal, metadata.
 // See ExternalOrdersRecipientVm.cs in the App repo for the canonical shape.
@@ -59,8 +57,13 @@ const ListOrdersInput = z.object({
   status: z
     .string()
     .optional()
-    .describe('Filter by order status (e.g. Draft, Paid, Mailed, EditsNeeded).'),
-  paid: z.boolean().optional().describe('Filter to only paid (true) or unpaid (false) orders.'),
+    .describe(`Filter by order status. Published statuses: ${ORDER_STATUSES.join(', ')}.`),
+  paid: z
+    .boolean()
+    .optional()
+    .describe(
+      'Filter by payment state (tri-state): pass true for paid orders only, pass false for unpaid orders only, or omit the field entirely to apply no payment filter.',
+    ),
   product: z.string().optional().describe('Filter by product type (e.g. Postcard, Letter).'),
   postage: PostageType.optional().describe('Filter by postage type.'),
   showRecipients: z.boolean().optional().describe('Include recipient details in the response.'),
@@ -82,7 +85,7 @@ const ListOrdersInput = z.object({
 export const listOrders: CuratedTool<z.infer<typeof ListOrdersInput>> = {
   name: 'list_orders',
   description:
-    'List LettrLabs direct mail orders for the authenticated profile. Supports filtering by status (Draft, Paid, Mailed, EditsNeeded, etc.), payment state, product type, and postage. Use this to answer questions like "what did I send last week", "show me my open drafts", or "list all unpaid orders".',
+    'List LettrLabs direct mail orders for the authenticated profile. Supports filtering by status, payment state (the `paid` filter is tri-state — see the field), product type, and postage. A deleted order reads as nonexistent here (the same response as an id that never existed), so a previously-visible order that is missing after a delete is expected, not an error. Use this to answer questions like "what did I send last week", "show me my open drafts", or "list all unpaid orders".',
   inputSchema: ListOrdersInput,
   handler: async (input, { client }) => client.get('/v1/order', input),
 };
@@ -201,7 +204,7 @@ const AppendOrderRecipientsInput = z.object({
 export const appendOrderRecipients: CuratedTool<z.infer<typeof AppendOrderRecipientsInput>> = {
   name: 'append_order_recipients',
   description:
-    'Append recipients to an existing draft order. Recipients are added on top of any already on the order. Use this after create_order_from_template to populate the mailing list.',
+    'Append recipients to an existing draft order. Recipients are added on top of any already on the order; use this after create_order_from_template to populate the mailing list. Append is only allowed while the order is editable — appending to a non-editable order (Paid, Ready For Production, or Mailed) is rejected with a 400 "invalid status". The response reports submittedRecipients and acceptedRecipients (prefer these; totalRecipients is deprecated and equals acceptedRecipients), and each undeliverable recipient entry carries a `reason` field explaining why it was rejected.',
   inputSchema: AppendOrderRecipientsInput,
   handler: async ({ orderId, recipients }, { client, auth }) =>
     dedupedCall(
@@ -238,7 +241,7 @@ const SubmitAndChargeOrderInput = z
 export const submitAndChargeOrder: CuratedTool<z.infer<typeof SubmitAndChargeOrderInput>> = {
   name: 'submit_and_charge_order',
   description:
-    'Submit an order for production and CHARGE the customer\'s payment method or prepaid balance. THIS COSTS REAL MONEY. Requires confirm: true. Always call preview_order_pricing first to show the user the cost, get explicit human approval, then call this with confirm: true. There is no rollback once submitted — orders enter production immediately.',
+    'Submit an order for production and CHARGE the customer\'s payment method or prepaid balance. THIS COSTS REAL MONEY. Requires confirm: true. Always call preview_order_pricing first to show the user the cost, get explicit human approval, then call this with confirm: true. An accepted checkout is settled asynchronously: the order transitions synchronously to "Payment Needed" and the response returns orderStatus plus pollAfterSeconds and settlementExpectedWithinSeconds — poll the order rather than assuming an immediate terminal state. During settlement a second checkout, a delete, or a recipient-delete on the same order is rejected with a 400 (this closes a double-charge window). A payment failure rolls the order back to Draft.',
   inputSchema: SubmitAndChargeOrderInput,
   handler: async (input, { client, auth }) => {
     assertConfirmed(input, 'submit_and_charge_order');
