@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { z } from 'zod';
 import { LettrLabsClient } from '../../src/client.js';
 import { dedupeCache } from '../../src/lib/dedupe.js';
 import {
@@ -90,7 +91,7 @@ describe('create_order_from_template', () => {
 });
 
 describe('append_order_recipients', () => {
-  it('PUTs /v1/order/:id/recipients:append with capitalized Recipients body', async () => {
+  it('PUTs the canonical /v1/order/:id/recipients route with a recipients body', async () => {
     const fetch = fakeFetch({ body: { Status: 'success' } });
     const ctx = buildCtx(fetch);
 
@@ -112,7 +113,9 @@ describe('append_order_recipients', () => {
     );
 
     const [url, init] = firstCall(fetch);
-    expect(String(url)).toContain('/v1/order/5/recipients:append');
+    // Targets the canonical PUT .../recipients route, not the `:append` compat alias.
+    expect(String(url)).toContain('/v1/order/5/recipients');
+    expect(String(url)).not.toContain(':append');
     expect(init.method).toBe('PUT');
     const body = JSON.parse(init.body as string) as { recipients: unknown[] };
     expect(body.recipients).toHaveLength(1);
@@ -161,5 +164,55 @@ describe('submit_and_charge_order', () => {
     expect(body['postageType']).toBe('FirstClass');
     expect(body['productionSpeed']).toBe('Normal');
     expect(body['autoBill']).toBe(true);
+  });
+});
+
+describe('tool description currency (R3/R4/R5/R6)', () => {
+  it('U-6: list_orders paid description states the tri-state contract', () => {
+    const shape = (listOrders.inputSchema as z.ZodObject<z.ZodRawShape>).shape;
+    const paidDesc = shape['paid']?.description ?? '';
+    expect(paidDesc).toMatch(/true/);
+    expect(paidDesc).toMatch(/false/);
+    expect(paidDesc).toMatch(/omit|absent/i);
+  });
+
+  it('U-6b: list_orders status description lists the current published statuses', () => {
+    const shape = (listOrders.inputSchema as z.ZodObject<z.ZodRawShape>).shape;
+    const statusDesc = shape['status']?.description ?? '';
+    expect(statusDesc).toContain('Payment Needed');
+    expect(statusDesc).toContain('Edits Needed');
+  });
+
+  it('U-7: append description names the new response fields and totalRecipients deprecation', () => {
+    const d = appendOrderRecipients.description;
+    expect(d).toContain('submittedRecipients');
+    expect(d).toContain('acceptedRecipients');
+    expect(d).toMatch(/reason/);
+    expect(d).toMatch(/totalRecipients[^.]*deprecated/);
+  });
+
+  it('U-8: checkout description names the settlement response fields', () => {
+    const d = submitAndChargeOrder.description;
+    expect(d).toContain('orderStatus');
+    expect(d).toContain('pollAfterSeconds');
+    expect(d).toContain('settlementExpectedWithinSeconds');
+  });
+
+  it('U-9: append description states the non-editable-order rejection', () => {
+    const d = appendOrderRecipients.description;
+    expect(d).toMatch(/non-editable/i);
+    expect(d).toContain('invalid status');
+    expect(d).toContain('Ready For Production');
+  });
+
+  it('U-10: checkout description states the Payment Needed transition and settlement-window rejection', () => {
+    const d = submitAndChargeOrder.description;
+    expect(d).toContain('Payment Needed');
+    expect(d).toMatch(/second checkout/i);
+    expect(d).toMatch(/rejected/i);
+  });
+
+  it('U-11: a read tool description conveys deleted-order-reads-nonexistent', () => {
+    expect(listOrders.description).toMatch(/deleted order reads as nonexistent/i);
   });
 });

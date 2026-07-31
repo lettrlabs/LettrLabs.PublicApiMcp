@@ -1,0 +1,61 @@
+{
+  "_provenance": "Snapshot of the LettrLabs public external /v1/* contract surface, captured 2026-07-30 for milestone M11 (devplatform_api_mcp_sync) from LettrLabs.App origin/main cdb7f91a: the [ApiKeySecurity]-decorated methods in backend/Controllers/ExternalApi/V1/*.cs and the [SchemaEnum] vocabularies published by SchemaEnumFilter. The App serves the equivalent generated document at /api/openapi/v3.json. contract-drift.test.ts reconciles src/openapi/spec.ts EXTERNAL_ENDPOINTS and src/openapi/vocabulary.ts against this snapshot; its env-gated live mode (LIVE_CONTRACT_URL) fetches the served doc to catch upstream drift. Refresh this file when the external contract changes.",
+  "operations": [
+    { "method": "GET", "path": "/v1/order" },
+    { "method": "POST", "path": "/v1/order" },
+    { "method": "DELETE", "path": "/v1/order/{id}" },
+    { "method": "GET", "path": "/v1/order/{id}/proof/{recipient?}" },
+    { "method": "GET", "path": "/v1/order/analytics" },
+    { "method": "GET", "path": "/v1/order/transaction" },
+    { "method": "GET", "path": "/v1/order/{id}/checkout" },
+    { "method": "POST", "path": "/v1/order/{id}/checkout" },
+    { "method": "GET", "path": "/v1/order/{id}/recipients" },
+    { "method": "DELETE", "path": "/v1/order/{id}/recipients" },
+    { "method": "PUT", "path": "/v1/order/{id}/recipients" },
+    { "method": "PUT", "path": "/v1/order/{id}/recipients:append" },
+    { "method": "GET", "path": "/v1/order/{id}/recipient-delivery-status" },
+    { "method": "GET", "path": "/v1/integration-orders" },
+    { "method": "POST", "path": "/v1/integration-orders/{id}/recipients" },
+    { "method": "POST", "path": "/v1/integration-orders/{id}-by-proximity" },
+    { "method": "POST", "path": "/v1/integration-orders/{id}:mail-by-proximity" },
+    { "method": "GET", "path": "/v1/conversions" },
+    { "method": "POST", "path": "/v1/conversions" },
+    { "method": "DELETE", "path": "/v1/conversions/{id}" },
+    { "method": "GET", "path": "/v1/conversions/{id}/status" },
+    { "method": "GET", "path": "/v1/templates" },
+    { "method": "GET", "path": "/v1/templates/{id}" },
+    { "method": "GET", "path": "/v1/fonts" },
+    { "method": "POST", "path": "/v1/order-recipients-statistics" },
+    { "method": "GET", "path": "/v1/me" },
+    { "method": "POST", "path": "/v1/address-book" },
+    { "method": "POST", "path": "/v1/zapierActions/address-book" }
+  ],
+  "vocabularies": {
+    "orderStatus": [
+      "Draft",
+      "Edits Needed",
+      "Payment Needed",
+      "Paid",
+      "Ready For Production",
+      "In Production",
+      "In QA",
+      "InShipping",
+      "Mailed",
+      "Refunded",
+      "Cancelled",
+      "Deleted",
+      "Error"
+    ],
+    "deliveryStatus": [
+      "Waiting on USPS Info",
+      "Mailed",
+      "In Transit",
+      "At Local Facility",
+      "Undeliverable",
+      "Delivered",
+      "No Tracking Available"
+    ],
+    "postageType": ["Standard", "FirstClass"],
+    "productionSpeed": ["Normal", "ExpeditedFaster", "ExpeditedFastest"]
+  }
+}
