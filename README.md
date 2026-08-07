@@ -17,6 +17,8 @@ You'll need a LettrLabs API key (see [Get an API key](#get-an-api-key) below). T
 3. Click **Connect**. Claude will open an authorization page in a new tab.
 4. **Paste your LettrLabs API key** into the consent form and click **Authorize**.
 
+> **Leave "Advanced settings" empty.** The optional **OAuth Client ID** and **Client Secret** fields don't apply to LettrLabs — your API key is *not* a client secret, and entering it there makes Claude error with *"A client id must be provided with a client secret."* Claude registers itself with the server automatically; your API key goes on the authorization page in step 4.
+
 Claude stores the token from then on. Start a new chat, enable the LettrLabs connector via the toggle in the composer, and ask it to "list my recent orders".
 
 ### ChatGPT (Plus / Pro / Team / Enterprise)
